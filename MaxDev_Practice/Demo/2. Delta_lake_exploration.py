@@ -260,4 +260,137 @@ deltaTable.alias('tgt') \
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ###### Now we will explore the following functionalities
+# MAGIC
+# MAGIC 1. History and Versioning.
+# MAGIC 2. Time Travel
+# MAGIC 3. Vacuum
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC describe history delta_demo.drivers_merge;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC select * from delta_demo.drivers_merge version as of 1;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC select * from delta_demo.drivers_merge timestamp as of '2024-03-02T18:15:26Z';
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC  Using Pyspark syntax
+
+# COMMAND ----------
+
+df = spark.read.format("delta").options(versionAsOf=2, path = "/mnt/maxdev00storage/default/drivers_merge/").load()
+
+display(df)
+
+# COMMAND ----------
+
+df = spark.read.format("delta").options(timestampAsOf='2024-03-02T18:27:24Z', path = "/mnt/maxdev00storage/default/drivers_merge/").load()
+
+display(df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC To compy with the GDPR guidelines if the user want his/her information to be deleted, we have to comply. Since, we're able to time travel and look at the previous data, the user data is not actually deleted even if we delete it from the current version.
+# MAGIC
+# MAGIC > therefore, we will use vacuum command to clean up the older version (default is 7 days, but this can  be changed).
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC set spark.databricks.delta.retentionDurationCheck.enabled = false;
+# MAGIC vacuum delta_demo.drivers_merge retain 0 hours;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Pyspark way
+
+# COMMAND ----------
+
+from delta.tables import DeltaTable
+
+deltaTable = DeltaTable.forName(spark, 'delta_demo.drivers_merge')    # Hive metastore-based tables
+
+deltaTable.vacuum(0)  
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC >If we want to rollback to the previous version due to any underlying reasons, we can do that by using merge and referencing to the previous versions.
+# MAGIC >
+# MAGIC >> For that we'll delete some records first and then try to load them back.
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC delete from delta_demo.drivers_merge where driverId <=2;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ####SQL Syntax
+# MAGIC
+# MAGIC Here we will only add the one of the deleted rows; and then we'll add the remaining using pyspark syntax.
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC merge into delta_demo.drivers_merge lts
+# MAGIC using delta_demo.drivers_merge version as of 17 old
+# MAGIC on lts.driverId = old.driverId 
+# MAGIC when not matched and old.driverId = 2 then
+# MAGIC insert *;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC select * from delta_demo.drivers_merge order by driverId;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Pyspark Syntax
+# MAGIC
+# MAGIC Adding the remaining row from the previous version.
+# MAGIC > https://docs.delta.io/latest/delta-update.html#language-python
+
+# COMMAND ----------
+
+deltaTable = DeltaTable.forName(spark, 'delta_demo.drivers_merge')
+
+oldDeltaTable = spark.read.format('delta').options(versionAsOf=17, path = "/mnt/maxdev00storage/default/drivers_merge/").load()
+
+deltaTable.alias("cur") \
+    .merge(oldDeltaTable.alias("old"),
+           "cur.driverId=old.driverId") \
+    .whenNotMatchedInsertAll(condition="old.driverId=1") \
+    .execute()
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC select * from delta_demo.drivers_merge order by driverId;
+
+# COMMAND ----------
+
 
