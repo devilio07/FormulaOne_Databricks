@@ -393,4 +393,42 @@ deltaTable.alias("cur") \
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC #### Converting Parquet into Delta tables
+# MAGIC >We'll convert both parquet tables as well as parquet files (just file no table).
 
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC drop table if exists delta_demo.convertParquet_toDelta;
+# MAGIC create table delta_demo.convertParquet_toDelta using parquet as (
+# MAGIC   select * from delta_demo.drivers_merge
+# MAGIC   );
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Converting using SQL
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC convert to delta delta_demo.convertParquet_toDelta;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Creating a parquet file instead of a table and then converting it into delta.
+# MAGIC
+
+# COMMAND ----------
+
+df = spark.table("delta_demo.drivers_merge")
+df.write.parquet("/mnt/maxdev00storage/default/converParquet_toDelta_new");
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC convert to delta parquet.`/mnt/maxdev00storage/default/converParquet_toDelta_new`;
