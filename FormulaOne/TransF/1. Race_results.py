@@ -1,9 +1,9 @@
 # Databricks notebook source
-# MAGIC %run "/Workspace/MaxDev_Practice/FormulaOne/Includes/Configurations"
+# MAGIC %run "../Includes/Configurations"
 
 # COMMAND ----------
 
-# MAGIC %run "/Workspace/MaxDev_Practice/FormulaOne/Includes/common_functions"
+# MAGIC %run "../Includes/common_functions"
 
 # COMMAND ----------
 

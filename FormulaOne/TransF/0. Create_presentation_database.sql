@@ -9,7 +9,3 @@ location "abfss://presentation@maxdev00datalake.dfs.core.windows.net/";
 -- COMMAND ----------
 
 describe database extended f1_presentation;
-
--- COMMAND ----------
-
-

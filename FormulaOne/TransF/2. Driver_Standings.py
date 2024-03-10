@@ -1,9 +1,9 @@
 # Databricks notebook source
-# MAGIC %run "/Workspace/MaxDev_Practice/FormulaOne/Includes/Configurations"
+# MAGIC %run "../Includes/Configurations"
 
 # COMMAND ----------
 
-# MAGIC %run "/Workspace/MaxDev_Practice/FormulaOne/Includes/common_functions"
+# MAGIC %run "../Includes/common_functions"
 
 # COMMAND ----------
 
@@ -30,7 +30,7 @@ from pyspark.sql.window import Window
 
 # COMMAND ----------
 
-race_year_list :list[str] = spark.read.format("parquet").options(path = f"{presentation_path}/race_results").load() \
+race_year_list :list[str] = spark.read.format("delta").options(path = f"{presentation_path}/race_results").load() \
     .filter(col("file_date")==g_file_date) \
     .select(col("race_year")) \
     .distinct() \
@@ -42,12 +42,12 @@ race_year_list :list[str] = [_.race_year for _ in race_year_list]
 
 # COMMAND ----------
 
-race_results = spark.read.format("parquet").options(path = f"{presentation_path}/race_results").load() \
+race_results = spark.read.format("delta").options(path = f"{presentation_path}/race_results").load() \
 .filter(col("race_year").isin(race_year_list))
 
 # COMMAND ----------
 
-driver_stand_df = race_results.groupBy(col("race_year"),col("driver_name"),col("driver_nationality"),col("team")) \
+driver_stand_df = race_results.groupBy(col("race_year"),col("driver_id"),col("driver_name"),col("driver_nationality")) \
     .agg(sum(col("points")).alias("total_points"), count(when(col("position")==1, True)).alias("wins"))
 
 # COMMAND ----------
@@ -70,12 +70,25 @@ driver_standing = driver_stand_df.withColumn("rank", dense_rank().over(driver_ra
 
 # COMMAND ----------
 
-# driver_standing.write.mode("overwrite").format("parquet").saveAsTable("f1_presentation.driver_standings")
+# # driver_standing.write.mode("overwrite").format("parquet").saveAsTable("f1_presentation.driver_standings")
 
-incremental_load(driver_standing,"race_year","f1_presentation","driver_standings")
+# incremental_load(driver_standing,"race_year","f1_presentation","driver_standings")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC > Converting to Delta lake
+
+# COMMAND ----------
+
+merge_condition = fr"old.driver_id=upd.driver_id and old.race_year=upd.race_year"
+conv_to_delta(driver_standing,"race_year",merge_condition,"f1_presentation","driver_standings")
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC
-# MAGIC select * from f1_presentation.driver_standings;
+# MAGIC select race_year, count(1) 
+# MAGIC from f1_presentation.driver_standings
+# MAGIC group by race_year
+# MAGIC order by race_year desc;

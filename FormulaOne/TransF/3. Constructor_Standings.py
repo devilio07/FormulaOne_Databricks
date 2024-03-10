@@ -1,9 +1,9 @@
 # Databricks notebook source
-# MAGIC %run "/Workspace/MaxDev_Practice/FormulaOne/Includes/Configurations"
+# MAGIC %run "../Includes/Configurations"
 
 # COMMAND ----------
 
-# MAGIC %run "/Workspace/MaxDev_Practice/FormulaOne/Includes/common_functions"
+# MAGIC %run "../Includes/common_functions"
 
 # COMMAND ----------
 
@@ -22,7 +22,7 @@ from pyspark.sql.window import Window
 
 # COMMAND ----------
 
-race_results = spark.read.format("parquet").options(path = f"{presentation_path}/race_results").load() \
+race_results = spark.read.format("delta").options(path = f"{presentation_path}/race_results").load() \
 .filter(col("file_date")==g_file_date)
 
 # COMMAND ----------
@@ -31,7 +31,7 @@ race_year_list = df_to_col(race_results, "race_year")
 
 # COMMAND ----------
 
-race_results = spark.read.format("parquet").options(path = f"{presentation_path}/race_results").load() \
+race_results = spark.read.format("delta").options(path = f"{presentation_path}/race_results").load() \
 .filter(col("race_year").isin(race_year_list))
 
 # COMMAND ----------
@@ -59,6 +59,16 @@ constructor_standing = const_stand_df.withColumn("rank", dense_rank().over(const
 
 # COMMAND ----------
 
-# constructor_standing.write.mode("overwrite").format("parquet").saveAsTable("f1_presentation.constructor_standings")
+# # constructor_standing.write.mode("overwrite").format("parquet").saveAsTable("f1_presentation.constructor_standings")
 
-incremental_load(constructor_standing,"race_year","f1_presentation","constructor_standings")
+# incremental_load(constructor_standing,"race_year","f1_presentation","constructor_standings")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC > Converting to Delta Lake
+
+# COMMAND ----------
+
+merge_condition = fr"old.team=upd.team and old.race_year=upd.race_year"
+conv_to_delta(constructor_standing,"race_year",merge_condition,"f1_presentation","constructor_standings")
