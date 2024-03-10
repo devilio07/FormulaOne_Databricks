@@ -89,7 +89,12 @@ qualify_fnl= add_ingest_date(qualify_raw.withColumnRenamed('qualifyId','qualify_
 
 # COMMAND ----------
 
-incremental_load(qualify_fnl,"race_id","f1_processed","qualifying")
+#incremental_load(qualify_fnl,"race_id","f1_processed","qualifying")
+
+# COMMAND ----------
+
+merge_condition = fr"old.qualify_id=upd.qualify_id and old.race_id=upd.race_id"
+conv_to_delta(qualify_fnl, "race_id",merge_condition,"f1_processed","qualifying")
 
 # COMMAND ----------
 

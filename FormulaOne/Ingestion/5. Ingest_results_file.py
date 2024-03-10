@@ -83,6 +83,15 @@ results_fnl= add_ingest_date(results_raw.withColumnRenamed('resultId','result_id
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC De-duplicating our data, since there is some issue with the data. One Driver has apparently participated twice in a single race and for two different teams.
+
+# COMMAND ----------
+
+results_dedup_fnl=results_fnl.dropDuplicates(["race_id","driver_id"])
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC
 # MAGIC ##### Step 3 - Saving the processed file in parquet format and in processed folder.
 
@@ -129,7 +138,7 @@ results_fnl= add_ingest_date(results_raw.withColumnRenamed('resultId','result_id
 # MAGIC
 # MAGIC #### Method 2: Overwrite -- Insertinto functionality by spark
 # MAGIC
-# MAGIC Instead of droppping the partition and then appending the data, we will overwrite the data (not append like in previous mathod) and use insert into functionality withtin spark.  
+# MAGIC Instead of droppping the partition and then appending the data, we will overwrite the data (not append like in previous method) and use insert into functionality withtin spark.  
 # MAGIC
 # MAGIC --While using insertInto() there is no way of telling the order of in which the columns are to inserted, so for the first run we will have use the normal partitionBy and saveAsTable statement. <br>
 # MAGIC --Also, insertInto() expects the last column to be the partition Column. So, we will need to take care of that as well.
@@ -139,16 +148,20 @@ results_fnl= add_ingest_date(results_raw.withColumnRenamed('resultId','result_id
 
 # COMMAND ----------
 
-incremental_load(results_fnl,"race_id","f1_processed","results")
+#incremental_load(results_fnl,"race_id","f1_processed","results")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC #### Delta lake integration. 
+# MAGIC > We will use merge functionality of delta lake instead of dynamically overwriting the partition
+
+# COMMAND ----------
+
+merge_condition = fr"old.result_id=upd.result_id and old.race_id=upd.race_id"
+conv_to_delta(results_dedup_fnl, "race_id",merge_condition,"f1_processed","results")
 
 # COMMAND ----------
 
 dbutils.notebook.exit("True")
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC
-# MAGIC select race_id, count(1)
-# MAGIC from f1_processed.results
-# MAGIC group by race_id;

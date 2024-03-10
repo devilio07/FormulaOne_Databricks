@@ -85,7 +85,7 @@ constructor_fnl = add_ingest_date(constructor_raw.withColumnRenamed("constructor
 
 # COMMAND ----------
 
-constructor_fnl.write.mode('overwrite').format('parquet').saveAsTable("f1_processed.constructors")
+constructor_fnl.write.mode('overwrite').format('delta').saveAsTable("f1_processed.constructors")
 
 # COMMAND ----------
 

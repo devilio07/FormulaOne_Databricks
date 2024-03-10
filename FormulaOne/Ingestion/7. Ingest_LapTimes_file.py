@@ -85,7 +85,12 @@ lap_times_fnl= add_ingest_date(lap_times_raw.withColumnRenamed('raceId','race_id
 
 # COMMAND ----------
 
-incremental_load(lap_times_fnl, "race_id", "f1_processed", "lap_times")
+#incremental_load(lap_times_fnl, "race_id", "f1_processed", "lap_times")
+
+# COMMAND ----------
+
+merge_condition = fr"old.driver_id=upd.driver_id and old.lap=upd.lap and old.race_id=upd.race_id"
+conv_to_delta(lap_times_fnl, "race_id",merge_condition,"f1_processed","lap_times")
 
 # COMMAND ----------
 

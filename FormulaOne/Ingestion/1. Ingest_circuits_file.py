@@ -139,7 +139,7 @@ circuits_raw4 = add_ingest_date(circuits_raw3)
 
 # COMMAND ----------
 
-circuits_raw4.write.mode('overwrite').format('parquet').saveAsTable("f1_processed.circuits")
+circuits_raw4.write.mode('overwrite').format('delta').saveAsTable("f1_processed.circuits")
 
 # COMMAND ----------
 

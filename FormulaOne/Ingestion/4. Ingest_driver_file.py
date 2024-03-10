@@ -95,7 +95,7 @@ drivers_fnl = add_ingest_date(drivers_raw.withColumnRenamed('driverId','driver_i
 
 # COMMAND ----------
 
-drivers_fnl.write.mode('overwrite').format('parquet').saveAsTable("f1_processed.drivers")
+drivers_fnl.write.mode('overwrite').format('delta').saveAsTable("f1_processed.drivers")
 
 # COMMAND ----------
 

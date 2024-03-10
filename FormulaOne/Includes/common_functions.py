@@ -1,5 +1,6 @@
 # Databricks notebook source
 from pyspark.sql.functions import *
+from delta.tables import DeltaTable
 
 # COMMAND ----------
 
@@ -38,3 +39,30 @@ def df_to_col(df, dist_col :str)-> list:
         .collect()
 
     return [_.race_year for _ in race_year_list]
+
+# COMMAND ----------
+
+from pyspark.sql.functions import *
+from delta.tables import DeltaTable
+
+def conv_to_delta(df,partition_id :str, merge_condition :str, databasename: str,tablename :str) -> None:
+
+    spark.conf.set("spark.databricks.optimizer.dynamicPartitionPruning","true")
+
+    if spark._jsparkSession.catalog().tableExists(f"{databasename}.{tablename}"):
+        df_old = DeltaTable.forName(spark,f"{databasename}.{tablename}") 
+        
+        df_old.alias("old").merge(
+            df.alias("upd"),
+            merge_condition
+        ) \
+        .whenMatchedUpdateAll() \
+        .whenNotMatchedInsertAll() \
+        .execute()
+        
+    else:
+        df.write.mode('overwrite').format('delta').partitionBy(f"{partition_id}").saveAsTable(f"{databasename}.{tablename}")
+
+# COMMAND ----------
+
+

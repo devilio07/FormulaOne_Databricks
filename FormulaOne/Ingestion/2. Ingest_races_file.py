@@ -126,7 +126,7 @@ races_fnl = add_ingest_date(races_raw4)
 
 # COMMAND ----------
 
-races_fnl.write.mode('overwrite').format('parquet').partitionBy('race_year').saveAsTable("f1_processed.races")
+races_fnl.write.mode('overwrite').format('delta').partitionBy('race_year').saveAsTable("f1_processed.races")
 
 # COMMAND ----------
 

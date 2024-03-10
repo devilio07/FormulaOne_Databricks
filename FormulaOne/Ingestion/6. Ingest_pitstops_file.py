@@ -87,15 +87,12 @@ pit_stop_fnl= add_ingest_date(pit_stop_raw.withColumnRenamed('raceId','race_id')
 
 # COMMAND ----------
 
-incremental_load(pit_stop_fnl,"race_id","f1_processed","pit_stops")
+#incremental_load(pit_stop_fnl,"race_id","f1_processed","pit_stops")
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC
-# MAGIC select race_id, count(1) 
-# MAGIC from f1_processed.pit_stops
-# MAGIC group by race_id
+merge_condition = fr"old.driver_id=upd.driver_id and old.stop=upd.stop and old.race_id=upd.race_id"
+conv_to_delta(pit_stop_fnl, "race_id",merge_condition,"f1_processed","pit_stops")
 
 # COMMAND ----------
 
